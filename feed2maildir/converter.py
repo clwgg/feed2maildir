@@ -12,6 +12,7 @@ else:
     from html.parser import HTMLParser
 
 import dateutil.parser
+import dateutil.tz
 
 # Python 2.x compabitlity
 if sys.version[0] == '2':
@@ -184,9 +185,9 @@ Link: {}
     def compose(self, post):
         """Compose the mail using the tempate"""
         try: # to get the update/publish time from the post
-            updated = post.updated
+            updated = self.mktime(post.updated)
         except: # the property is not set, use now()
-            updated = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
+            updated = self.mktime(time.gmtime())
         desc = ''
         if self.strip:
             stripper = HTMLStripper()
@@ -218,7 +219,12 @@ Link: {}
 
     def mktime(self, arg):
         """Make a datetime object from a time string"""
-        return dateutil.parser.parse(arg)
+        if isinstance(arg, time.struct_time):
+            timestruct = arg
+        else:
+            tzinfos = {"PST": dateutil.tz.gettz("US/Pacific")}
+            timestruct = datetime.date.timetuple(dateutil.parser.parse(arg, tzinfos=tzinfos))
+        return time.strftime("%a, %d %b %Y %H:%M:%S +0000", timestruct)
 
     def output(self, arg):
         if not self.silent:
